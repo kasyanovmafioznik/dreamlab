@@ -1,0 +1,29 @@
+# One-command backend startup from the repository root:
+#   docker compose up --build      →  http://localhost:8000  (docs at /docs)
+#
+# The service code lives in ./backend; state (SQLite + generated PNGs) is kept
+# in ./backend/data via a bind mount, so it survives `docker compose down`.
+services:
+  api:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATA_DIR: /srv/data
+      # MIN_DELAY_SECONDS: "3"
+      # MAX_DELAY_SECONDS: "8"
+      # FLAKY_RATE: "0.2"        # uncomment to make 20% of generations fail randomly
+    volumes:
+      - ./backend/data:/srv/data
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=3).status==200 else 1)"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
