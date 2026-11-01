@@ -34,7 +34,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 ### Tests
 
 ```bash
-.venv/bin/python -m pytest tests/ -q          # locally
+.venv/bin/python -m pytest tests/ -q          # locally — 14 passed
 docker compose run --rm api pytest tests/ -q   # inside the image
 ```
 
@@ -47,8 +47,8 @@ Interactive docs: `GET /docs` (OpenAPI auto-generated).
 | GET | `/health` | Liveness `{"status":"ok"}` |
 | GET | `/v1/options` | Option catalog (styles / aspect ratios / qualities, `premium` flags). The client renders pickers from this — it does not hardcode the catalog. |
 | POST | `/v1/generations` | Accept a job → `202 {id, poll_url}` |
-| GET | `/v1/generations/{id}` | Poll job status → `queued \| processing \| succeeded \| failed` (+ `image_url` or `error`) |
-| GET | `/v1/generations/{id}/image` | PNG bytes (only when `succeeded`) |
+| GET | `/v1/generations/{id}?user_id=` | Poll job status → `queued \| processing \| succeeded \| failed` (+ `image_url` or `error`). A job belonging to another `user_id` is reported as `not_found` |
+| GET | `/v1/generations/{id}/image?user_id=` | PNG bytes (only when `succeeded`) |
 | GET | `/v1/generations?user_id=` | Server-side history for a user |
 | GET | `/v1/users/{id}/subscription` | `{tier: free\|premium}` (defaults to `free`) |
 | POST | `/v1/users/{id}/subscription/upgrade` | Mock purchase — no billing |
@@ -74,6 +74,7 @@ interval (e.g. 0.5 s → 2 s backoff).
 | Random failures | Start with `FLAKY_RATE=0.2 docker compose up` | ~20 % of jobs fail with a transient error |
 | Restart kills in-flight jobs | Restart the server while a job is `processing` | Job becomes `failed` with `error.code = "server_restarted"` (history/subscription survive — see tests) |
 | Malformed/unknown ids | `GET /v1/generations/doesnotexist` | 404 `not_found` |
+| Foreign job | `GET /v1/generations/<id>?user_id=<other>` | 404 `not_found` — history is isolated per anonymous id |
 | Invalid body | `prompt` shorter than 3 chars | 422 `validation_error` with per-field messages |
 
 Env knobs: `DATA_DIR`, `MIN_DELAY_SECONDS` (3), `MAX_DELAY_SECONDS` (8),

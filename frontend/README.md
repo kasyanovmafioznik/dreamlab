@@ -20,9 +20,14 @@ Server URL** → *Test connection*. Для реального устройств
 ## Test
 
 ```bash
-flutter test
-flutter analyze
+flutter test                                  # unit-тесты
+flutter analyze                               # 0 issues
+flutter test integration_test/screencast_test.dart -d <simulator-id>
 ```
+
+Integration-сценарий проходит по реальному UI (генерация → ошибка → *Try again* →
+пейвол → покупка → Settings → History) — он же используется для записи
+демо-скринкаста.
 
 ## Структура
 
@@ -38,6 +43,7 @@ lib/
   data/
     dto/api_models.dart   # парсинг ответов + защита от битых payload
     local/history_store.dart  # sqflite-история (переживает рестарт и оффлайн)
+    local/image_store.dart   # PNG-файлы: хранится имя, путь резолвится на лету
     local/prefs.dart      # userId, server URL, кэш тира подписки, кэш каталога
     repositories/repositories.dart
   di/app_container.dart
@@ -47,10 +53,12 @@ lib/
     settings/  # bloc, экран Settings
     subscription/ # bloc: tier с сервера + мгновенная отрисовка из кэша
   router/app_router.dart # 3 таба (go_router) + детализация поверх шелла
+integration_test/
+  screencast_test.dart    # сценарий демо-скринкаста
 ```
 
 ## Стек
 
 `flutter_bloc`, `go_router`, `dio`, `sqflite`, `path_provider`,
-`shared_preferences`, `intl`. Без codegen (bloc без `build_runner`).
-Версии: Flutter 3.41 / Dart 3.11.
+`shared_preferences`, `intl`, `integration_test`. Без codegen (bloc без
+`build_runner`). Версии: Flutter 3.41 / Dart 3.11.
