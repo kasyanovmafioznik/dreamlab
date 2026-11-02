@@ -13,6 +13,7 @@ abstract final class AppConfig {
   static const kSubTier = 'sub_tier';
   static const kSubUpgradedAt = 'sub_upgraded_at';
   static const kOptionsCache = 'options_cache';
+  static const kLastTab = 'last_tab';
 
   // Networking.
   static const connectTimeout = Duration(seconds: 10);

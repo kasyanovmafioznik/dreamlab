@@ -24,7 +24,7 @@ class _DreamLabAppState extends State<DreamLabApp> {
   late final GenerateBloc _generateBloc;
   late final HistoryBloc _historyBloc;
   late final SettingsBloc _settingsBloc;
-  late final _router = createRouter();
+  late final _router = createRouter(prefs: widget.container.prefs);
 
   @override
   void initState() {
@@ -92,6 +92,8 @@ class _DreamLabAppState extends State<DreamLabApp> {
             title: 'DreamLab',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light(),
+            // Deep links are enabled by default: dreamlab:///history opens
+            // the History tab directly.
             routerConfig: _router,
           ),
         ),

@@ -54,6 +54,10 @@ class Prefs {
     _sp.remove(AppConfig.kSubUpgradedAt);
   }
 
+  /// Index of the bottom tab the user was on last — the app reopens there.
+  int get lastTab => _sp.getInt(AppConfig.kLastTab) ?? 0;
+  set lastTab(int value) => _sp.setInt(AppConfig.kLastTab, value);
+
   String? get cachedOptionsJson => _sp.getString(AppConfig.kOptionsCache);
   set cachedOptionsJson(String? value) => value == null
       ? _sp.remove(AppConfig.kOptionsCache)
