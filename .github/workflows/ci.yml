@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: backend (docker, ${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # amd64 — typical CI / Intel Mac
+          - runner: ubuntu-24.04
+            arch: amd64
+          # arm64 — Apple Silicon (what the reviewer most likely has)
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the image
+        run: docker compose build
+
+      - name: Run the test suite inside the image
+        run: docker compose run --rm api pytest tests/ -q
+
+      - name: Start the service
+        run: docker compose up -d
+
+      - name: Wait for the healthcheck
+        run: |
+          for i in $(seq 1 40); do
+            if curl -fsS http://localhost:8000/health > /dev/null; then
+              echo "service is up"; exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs
+          exit 1
+
+      - name: Smoke test: generate an image end to end
+        run: |
+          set -euo pipefail
+          USER=11111111-1111-4111-8111-111111111111
+          JOB=$(curl -fsS -X POST http://localhost:8000/v1/generations \
+            -H 'Content-Type: application/json' \
+            -d "{\"user_id\":\"$USER\",\"prompt\":\"ci smoke test\",\"style\":\"minimal\",\"aspect_ratio\":\"1:1\",\"quality\":\"standard\"}")
+          ID=$(echo "$JOB" | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
+          for i in $(seq 1 40); do
+            STATUS=$(curl -fsS "http://localhost:8000/v1/generations/$ID?user_id=$USER" \
+              | python3 -c 'import sys,json; print(json.load(sys.stdin)["status"])')
+            [ "$STATUS" = "succeeded" ] && break
+            sleep 2
+          done
+          echo "job status: $STATUS"
+          curl -fsS -o /tmp/out.png \
+            -w "image: http=%{http_code} type=%{content_type} size=%{size_download}\n" \
+            "http://localhost:8000/v1/generations/$ID/image?user_id=$USER"
+          test -s /tmp/out.png
+
+      - name: Premium gate returns 402 for a free user
+        run: |
+          set -euo pipefail
+          CODE=$(curl -s -o /tmp/err.json -w '%{http_code}' -X POST http://localhost:8000/v1/generations \
+            -H 'Content-Type: application/json' \
+            -d '{"user_id":"22222222-2222-4222-8222-222222222222","prompt":"premium","style":"cyberpunk","aspect_ratio":"21:9","quality":"4k"}')
+          echo "http=$CODE"; cat /tmp/err.json; echo
+          [ "$CODE" = "402" ]
+
+      - name: Logs
+        if: always()
+        run: docker compose logs --tail=50
+
+  frontend:
+    name: frontend (flutter analyze + test)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.6'
+          channel: stable
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
