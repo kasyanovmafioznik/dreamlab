@@ -1,5 +1,7 @@
 # DreamLab — mock AI image generation
 
+[![CI](https://github.com/kasyanovmafioznik/dreamlab/actions/workflows/ci.yml/badge.svg)](https://github.com/kasyanovmafioznik/dreamlab/actions/workflows/ci.yml)
+
 Бэкенд + Flutter-клиент под iOS. Пользователь пишет промпт, выбирает опции
 (стиль, соотношение сторон, качество) и получает сгенерированную картинку.
 
@@ -56,6 +58,10 @@ docker compose up --build
 Первый запуск тянет базовый образ `python:3.12-slim` и ~30 пакетов (всё
 готовыми wheels — ни компиляции, ни сборки из исходников); после этого сервис
 работает полностью офлайн.
+
+Сборка и запуск проверяются в CI на реальном Docker — и на amd64, и на arm64
+(Apple Silicon): образ собирается, тесты внутри образа зелёные, сервис
+отвечает, генерация отдаёт PNG, премиум-гейт возвращает 402.
 
 Тесты прямо в контейнере:
 
